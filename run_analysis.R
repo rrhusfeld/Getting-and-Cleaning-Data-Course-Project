@@ -54,4 +54,6 @@ Total$Act_Lab[Total$Activity == 3] <- "WALKING_DOWNSTAIRS"
 Total$Act_Lab[Total$Activity == 4] <- "SITTING"
 Total$Act_Lab[Total$Activity == 5] <- "STANDING"
 Total$Act_Lab[Total$Activity == 6] <- "LAYING"
+write.table(Total, "Total.txt", row.name=FALSE) 
+
 
