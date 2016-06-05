@@ -15,16 +15,18 @@ y_test <- read.table("~/Downloads/UCI HAR Dataset/test/y_test.txt", quote="\"", 
 #Import the activity labels so we can replace them
 
 
-
 # Import the subject train vector subject_train
 subject_train <- read.table("~/Downloads/UCI HAR Dataset/train/subject_train.txt", quote="\"", comment.char="")
-#Import the train data and store into X_train
+
+# Import the subject train vector subject_train
 X_train <- read.table("~/Downloads/UCI HAR Dataset/train/X_train.txt", quote="\"", comment.char="")
 #Import the training labels 
 y_train <- read.table("~/Downloads/UCI HAR Dataset/train/y_train.txt", quote="\"", comment.char="")
 
 
 features <- read.table("~/Downloads/UCI HAR Dataset/features.txt", quote="\"", comment.char="")
+#convert names to all upper case to make sorting STD and MEAN easier with S/s and M/m
+features$V2 <- toupper(features$V2)
 names(X_test)<- features$V2
 names(X_train)<- features$V2
 
@@ -41,19 +43,41 @@ names(Test)[1]<- "Subject"
 names(Test)[2]<- "Activity"
 #combine the Test and Train datasets into "Total" 
 Total <- rbind(Test, Train)
-#calculate the mean of each variable and store into "mean_total" 
-mean_total <- sapply(Total[,3:563], mean)
-#calculate the standard deviation of each variable store in "sd_total"
-sd_total <- sapply(Total[,3:563], sd)
+
+# Make every event type uppercase
+names(Total)<- toupper(names(Total))
+
+# # Given the dataset (x values), extract only the measurements on the mean
+# and standard deviation for each measurement.
+
+# Find the mean and std columns
+MEAN.COLUMN <- sapply(features[,2], function(x) grepl("MEAN()", x, fixed=T))
+STD.COLUMN <- sapply(features[,2], function(x) grepl("STD()", x, fixed=T))
+
+# Extract them from the data
+Tidy <- Total[, (MEAN.COLUMN | STD.COLUMN)]
+colnames(Tidy) <- features[(MEAN.COLUMN | STD.COLUMN), 2]
+
+Tidy1 <- cbind(Total$SUBJECT, Total$ACTIVITY, Tidy)
+names(Tidy1)[1]<- "SUBJECT"
+names(Tidy1)[2]<- "ACTIVITY"
+
+
 #create a new column "Act_Lab" to store the Activity labels based on the 
 #string in "activity_labels"
-Total$Act_Lab[Total$Activity == 1] <- "WALKING"
-Total$Act_Lab[Total$Activity == 2] <- "WALKING=UPSTAIRS"
-Total$Act_Lab[Total$Activity == 2] <- "WALKING_UPSTAIRS"
-Total$Act_Lab[Total$Activity == 3] <- "WALKING_DOWNSTAIRS"
-Total$Act_Lab[Total$Activity == 4] <- "SITTING"
-Total$Act_Lab[Total$Activity == 5] <- "STANDING"
-Total$Act_Lab[Total$Activity == 6] <- "LAYING"
-write.table(Total, "Total.txt", row.name=FALSE) 
+Tidy1$Act_Lab[Tidy1$ACTIVITY == 1] <- "WALKING"
+Tidy1$Act_Lab[Tidy1$ACTIVITY == 2] <- "WALKING=UPSTAIRS"
+Tidy1$Act_Lab[Tidy1$ACTIVITY == 2] <- "WALKING_UPSTAIRS"
+Tidy1$Act_Lab[Tidy1$ACTIVITY == 3] <- "WALKING_DOWNSTAIRS"
+Tidy1$Act_Lab[Tidy1$ACTIVITY == 4] <- "SITTING"
+Tidy1$Act_Lab[Tidy1$ACTIVITY == 5] <- "STANDING"
+Tidy1$Act_Lab[Tidy1$ACTIVITY == 6] <- "LAYING"
+
+#calculate the average of each column for each activity and subject using the plyr package. 
+library(plyr)
+Tidy2 <- ddply(Tidy1, .(SUBJECT, ACTIVITY), function(x) colMeans(x[,1:60]))
+
+#write the table into 'TidyDataset.txt'
+write.table(Tidy2, "TidyDataset.txt", row.name=FALSE) 
 
 
